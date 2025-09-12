@@ -1,0 +1,62 @@
+"use client";
+import Link from "next/link";
+import { Container } from "@/components/layout/Container";
+import { Button } from "@/components/ui/button";
+import * as React from "react";
+
+export const Header: React.FC = () => {
+  const [isOpen, setIsOpen] = React.useState(false);
+  const handleToggleMenu = () => setIsOpen((v) => !v);
+
+  return (
+    <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <Container className="flex h-16 items-center justify-between">
+        <Link href="#" aria-label="Ukiyo Crew home" className="flex items-center gap-2">
+          <span className="text-xl font-bold tracking-widest text-primary">UKIYO CREW</span>
+        </Link>
+        <nav className="hidden items-center gap-6 md:flex" aria-label="Navigazione principale">
+          <Link href="#services" className="text-sm hover:underline underline-offset-4">Servizi</Link>
+          <Link href="#gallery" className="text-sm hover:underline underline-offset-4">Galleria</Link>
+          <Link href="#pricing" className="text-sm hover:underline underline-offset-4">Prezzi</Link>
+          <Link href="#about" className="text-sm hover:underline underline-offset-4">Chi siamo</Link>
+          <Link href="#contact" className="text-sm hover:underline underline-offset-4">Contatti</Link>
+        </nav>
+        <div className="flex items-center gap-2">
+          <Button asChild size="sm" className="hidden md:inline-flex">
+            <Link href="#contact">Prenota</Link>
+          </Button>
+          <button
+            aria-label="Apri/chiudi menu"
+            aria-expanded={isOpen}
+            aria-controls="mobile-menu"
+            className="inline-flex h-9 w-9 items-center justify-center rounded md:hidden border border-border"
+            onClick={handleToggleMenu}
+          >
+            <span className="i-[menu] sr-only">Menu</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+              <path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
+      </Container>
+      {isOpen && (
+        <div id="mobile-menu" className="md:hidden border-t border-border">
+          <Container className="py-3">
+            <div className="grid gap-2">
+              <Link href="#services" className="py-1">Servizi</Link>
+              <Link href="#gallery" className="py-1">Galleria</Link>
+              <Link href="#pricing" className="py-1">Prezzi</Link>
+              <Link href="#about" className="py-1">Chi siamo</Link>
+              <Link href="#contact" className="py-1">Contatti</Link>
+              <Button asChild className="mt-2">
+                <Link href="#contact">Prenota</Link>
+              </Button>
+            </div>
+          </Container>
+        </div>
+      )}
+    </header>
+  );
+};
+
+

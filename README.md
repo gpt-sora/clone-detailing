@@ -1,36 +1,83 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## Ukiyo Crew — Car Detailing
 
-## Getting Started
+> Nota: La documentazione ufficiale è ora unificata in `GUIDA-PROGETTO.md`. Questo README resta sintetico e rimanda alla guida.
 
-First, run the development server:
+Landing page moderna per servizi di car detailing con form di prenotazione e invio email via Resend. Basata su Next.js (App Router) e TailwindCSS.
 
+### Documentazione
+- Leggi la guida completa: `GUIDA-PROGETTO.md`
+
+### Stack
+- Next.js 15 (App Router), React 19, TypeScript
+- TailwindCSS 4
+- Radix UI + shadcn/ui (`src/components/ui`)
+- GSAP (animazioni), Embla (carousel)
+- Zod + React Hook Form (validazione form)
+- Resend (invio email)
+
+## Requisiti
+- Node.js ≥ 18.18
+- NPM (o Yarn/PNPM/Bun)
+- Chiave Resend per invio email
+
+## Avvio rapido
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# apri http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Build e produzione
+```bash
+npm run build
+npm start
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Lint
+```bash
+npm run lint
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Variabili d’ambiente
+Crea `.env.local` nella root:
+```bash
+RESEND_API_KEY=la_tua_chiave_resend
+BOOKING_TO_EMAIL=destinatario@tuodominio.com
+NEXT_PUBLIC_SITE_URL=https://tuodominio.tld
+```
 
-## Learn More
+## Struttura (essenziale)
+- `src/app/` — App Router, pagine e API
+  - `page.tsx` — composizione sezioni landing
+  - `api/booking/route.ts` — endpoint POST per invio email
+  - `robots.txt/route.ts`, `sitemap.xml/route.ts`
+- `src/components/`
+  - `BookingForm.tsx` — form con RHF + Zod + toast
+  - `ui/` — componenti shadcn/radix (button, input, dialog, ecc.)
+- `src/lib/`
+  - `schema.ts` — `bookingSchema`
+  - `seo.ts` — metadata default
 
-To learn more about Next.js, take a look at the following resources:
+## Funzionalità
+- Sezioni: Hero, Services, Gallery, Testimonials, Vision/Mission, Partners
+- Form prenotazione: validazione client, invio a `/api/booking`
+- Toast di successo/errore
+- SEO: metadata, JSON-LD, `robots.txt`, `sitemap.xml`
+- A11y: skip link, label/aria corretti
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Endpoint API
+Vedi `GUIDA-PROGETTO.md` per dettagli completi su `/api/booking`.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Script (`package.json`)
+```json
+{
+  "dev": "next dev --turbopack",
+  "build": "next build --turbopack",
+  "start": "next start",
+  "lint": "eslint"
+}
+```
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Deploy su Vercel
+- Imposta le ENV (`RESEND_API_KEY`, `BOOKING_TO_EMAIL`, `NEXT_PUBLIC_SITE_URL`) nelle Project Settings.
+- Collega la repo, build automatico su push.

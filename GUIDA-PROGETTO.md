@@ -213,6 +213,31 @@ Comando: `ANALYZE=true npm run build`.
 
 ---
 
+## Stato attuale (12/09/2025)
+- Servizi: rimosso toggle dettagli; hover immagine fluido stile Hero; icone visibili in dark mode (`dark:invert` + `brightness-90`). Layout 4 colonne invariato.
+- Home: rimossa sezione “preventivo su misura”.
+- Galleria: asset normalizzati `.jpg`; viewer base con frecce Prev/Next e fade; rimosso Embla (causava invisibilità slide). 
+- Varie: eliminati mismatch che potevano causare hydration error nella sezione servizi.
+
+## Prossimi step suggeriti
+1) Gallery
+   - Opzione A: mantenere viewer base e aggiungere thumbnails sotto (3–6 miniature cliccabili).
+   - Opzione B: reintrodurre carosello Embla ma tramite dynamic import lato client, con autoplay opzionale e edges in fade.
+2) UI polish
+   - Separatore sottile sotto i titoli sezione; microspaziature coerenti.
+3) Pulizia
+   - Spostare `Pricing.tsx` in `deprecated/` o rimuoverlo se non serve.
+4) API booking hardening (vedi sezione Sicurezza) + SEO JSON‑LD/robots/sitemap con `SITE_URL`.
+
+## Comandi Git suggeriti
+```bash
+git add -A
+git commit -m "feat(services): hover pulito; refactor(gallery): viewer base jpg; chore: cleanup"
+git push
+```
+
+---
+
 ## Deploy (Vercel)
 - Imposta `RESEND_API_KEY` e `BOOKING_TO_EMAIL` nelle Project Settings.
 - Configura `NEXT_PUBLIC_SITE_URL` per SEO/robots/sitemap/JSON‑LD.

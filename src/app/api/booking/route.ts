@@ -1,26 +1,12 @@
 import { NextResponse } from "next/server";
 import { bookingSchema } from "@/lib/schema";
 import { Resend } from "resend";
+import { logger, type LogContext } from "@/lib/logger";
+import { sanitizeInput, sanitizeEmail, sanitizePhone } from "@/lib/sanitize";
+import { bookingRateLimiter, getClientIdentifier } from "@/lib/rate-limiter";
 
-// In-memory rate limit store: ip -> timestamps (ms)
-const requestTimestampsByIp: Map<string, number[]> = new Map();
-
-const getClientIp = (req: Request): string => {
-  const xff = req.headers.get("x-forwarded-for");
-  if (xff) return xff.split(",")[0]?.trim() || "unknown";
-  const xrip = req.headers.get("x-real-ip");
-  if (xrip) return xrip.trim();
-  return "unknown";
-};
-
-const isRateLimited = (ip: string, limit = 5, windowMs = 10 * 60 * 1000): boolean => {
-  const now = Date.now();
-  const arr = requestTimestampsByIp.get(ip) ?? [];
-  const recent = arr.filter((t) => now - t < windowMs);
-  recent.push(now);
-  requestTimestampsByIp.set(ip, recent);
-  return recent.length > limit;
-};
+// TODO: Rimuovere vecchio sistema rate limiting dopo test
+// Sistema sostituito con rate-limiter.ts avanzato
 
 const escapeHtml = (input: string): string =>
   input
@@ -59,16 +45,49 @@ const vehicleLabelMap: Record<string, string> = {
 const getVehicleLabel = (key: string): string => vehicleLabelMap[key] ?? key;
 
 export async function POST(req: Request) {
+  const startTime = Date.now();
+  const clientId = getClientIdentifier(req);
+  
+  // Crea context per logging strutturato
+  const logContext: LogContext = {
+    ip: clientId,
+    method: req.method,
+    endpoint: '/api/booking',
+    userAgent: req.headers.get('user-agent') || undefined,
+  };
+
   try {
     // Origin/Referer check
     if (!isAllowedOrigin(req)) {
+      logger.warn('Origin not allowed', {
+        ...logContext,
+        origin: req.headers.get('origin'),
+        referer: req.headers.get('referer'),
+      });
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Rate limit
-    const ip = getClientIp(req);
-    if (isRateLimited(ip)) {
-      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    // Rate limit con sistema avanzato
+    const rateLimitResult = await bookingRateLimiter.checkLimit(clientId, logContext);
+    if (!rateLimitResult.allowed) {
+      const retryAfter = Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000);
+      
+      return NextResponse.json(
+        { 
+          error: "Too many requests",
+          message: "Troppe richieste di prenotazione. Riprova tra qualche minuto.",
+          retryAfter,
+        }, 
+        { 
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': '3',
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': Math.ceil(rateLimitResult.resetTime / 1000).toString(),
+            'Retry-After': retryAfter.toString(),
+          },
+        }
+      );
     }
 
     // Payload guard (post-read, semplice)
@@ -103,28 +122,59 @@ export async function POST(req: Request) {
     const toEmail = process.env.BOOKING_TO_EMAIL || "owner@example.com";
     const fromEmail = process.env.BOOKING_FROM_EMAIL || "onboarding@resend.dev";
 
+    // Sanitizza tutti gli input prima di usarli
+    const sanitizedData = {
+      name: sanitizeInput(data.name),
+      email: sanitizeEmail(data.email),
+      phone: sanitizePhone(data.phone),
+      vehicle: sanitizeInput(data.vehicle),
+      service: sanitizeInput(data.service),
+      date: sanitizeInput(data.date),
+      time: sanitizeInput(data.time),
+      notes: data.notes ? sanitizeInput(data.notes) : ""
+    };
+
     const html = `
       <h2>Nuova richiesta prenotazione</h2>
-      <p><strong>Nome:</strong> ${escapeHtml(data.name)}</p>
-      <p><strong>Email:</strong> ${escapeHtml(data.email)}</p>
-      <p><strong>Telefono:</strong> ${escapeHtml(data.phone)}</p>
-      <p><strong>Veicolo:</strong> ${escapeHtml(getVehicleLabel(data.vehicle))}</p>
-      <p><strong>Servizio:</strong> ${escapeHtml(getServiceLabel(data.service))}</p>
-      <p><strong>Data/Ora:</strong> ${escapeHtml(data.date)} ${escapeHtml(data.time)}</p>
-      <p><strong>Note:</strong> ${data.notes ? escapeHtml(data.notes) : "-"}</p>
+      <p><strong>Nome:</strong> ${escapeHtml(sanitizedData.name)}</p>
+      <p><strong>Email:</strong> ${escapeHtml(sanitizedData.email)}</p>
+      <p><strong>Telefono:</strong> ${escapeHtml(sanitizedData.phone)}</p>
+      <p><strong>Veicolo:</strong> ${escapeHtml(getVehicleLabel(sanitizedData.vehicle))}</p>
+      <p><strong>Servizio:</strong> ${escapeHtml(getServiceLabel(sanitizedData.service))}</p>
+      <p><strong>Data/Ora:</strong> ${escapeHtml(sanitizedData.date)} ${escapeHtml(sanitizedData.time)}</p>
+      <p><strong>Note:</strong> ${sanitizedData.notes ? escapeHtml(sanitizedData.notes) : "-"}</p>
     `;
 
     await resend.emails.send({
       from: fromEmail,
       to: [toEmail],
-      replyTo: data.email,
-      subject: `Prenotazione • ${escapeHtml(getServiceLabel(data.service))} • ${escapeHtml(data.date)} ${escapeHtml(data.time)} • ${escapeHtml(data.name)}`,
+      replyTo: sanitizedData.email,
+      subject: `Prenotazione • ${escapeHtml(getServiceLabel(sanitizedData.service))} • ${escapeHtml(sanitizedData.date)} ${escapeHtml(sanitizedData.time)} • ${escapeHtml(sanitizedData.name)}`,
       html,
+    });
+
+    // Log richiesta riuscita con metriche
+    const duration = Date.now() - startTime;
+    logger.apiRequest('POST', '/api/booking', 200, duration, {
+      ...logContext,
+      customerEmail: sanitizedData.email, // Email sanitizzata, non PII critica
+      serviceType: sanitizedData.service,
+      vehicleType: sanitizedData.vehicle,
     });
 
     return NextResponse.json({ ok: true });
   } catch (error) {
-    console.error("/api/booking error");
+    const duration = Date.now() - startTime;
+    
+    // Log errore con context strutturato
+    logger.error('Booking API error', {
+      ...logContext,
+      duration,
+    }, error);
+    
+    // Log metriche API
+    logger.apiRequest('POST', '/api/booking', 500, duration, logContext);
+    
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

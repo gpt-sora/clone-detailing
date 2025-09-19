@@ -2,34 +2,61 @@
 import Image from "next/image";
 import Link from "next/link";
 import * as React from "react";
+import { motion, useScroll, useTransform } from "framer-motion";
 import { Container } from "@/components/layout/Container";
 import { Button } from "@/components/ui/button";
-import gsap from "gsap";
 import { isReducedMotion } from "@/lib/animations";
 // dialog rimosso: riproduzione inline
 
 export const Hero: React.FC = () => {
-  const titleRef = React.useRef<HTMLHeadingElement>(null);
-  const kpiRef = React.useRef<HTMLDivElement>(null);
+  const heroRef = React.useRef<HTMLDivElement>(null);
+  const [isClient, setIsClient] = React.useState(false);
+  
+  // Parallax effect per il background
+  const { scrollYProgress } = useScroll({
+    target: heroRef,
+    offset: ["start start", "end start"]
+  });
+  
+  const backgroundY = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
+  const textY = useTransform(scrollYProgress, [0, 1], ["0%", "50%"]);
   const videoRef = React.useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = React.useState(false);
   const [isPaused, setIsPaused] = React.useState(false);
   const [isMuted, setIsMuted] = React.useState(true);
-  const [isVideoReady, setIsVideoReady] = React.useState(false);
+  // const [isVideoReady, setIsVideoReady] = React.useState(false); // Rimosso: non utilizzato
   const [videoFirstFrameSrc, setVideoFirstFrameSrc] = React.useState<string | null>(null);
   const controlsHideTimerRef = React.useRef<number | null>(null);
   const [volumePercent, setVolumePercent] = React.useState<number>(50);
   const [lastVolumeBeforeMute, setLastVolumeBeforeMute] = React.useState<number>(50);
 
+  // Hydration fix: attiva animazioni solo lato client
   React.useEffect(() => {
-    if (isReducedMotion()) return;
-    const tl = gsap.timeline({ defaults: { ease: "power2.out", duration: 0.6 } });
-    if (titleRef.current) tl.from(titleRef.current, { y: 20, opacity: 0 });
-    if (kpiRef.current) tl.from(kpiRef.current.children, { y: 16, opacity: 0, stagger: 0.08 }, "<0.1");
-    return () => {
-      tl.kill();
-    };
+    setIsClient(true);
   }, []);
+
+  // Definisco handleToggleMute prima per evitare hoisting issues
+  const handleToggleMute = React.useCallback(() => {
+    const next = !isMuted;
+    setIsMuted(next);
+    const video = videoRef.current;
+    if (video) {
+      video.muted = next;
+      if (next) {
+        if (volumePercent > 0) setLastVolumeBeforeMute(volumePercent);
+        setVolumePercent(0);
+        video.volume = 0;
+      } else {
+        const restore = lastVolumeBeforeMute > 0 ? lastVolumeBeforeMute : 50;
+        setVolumePercent(restore);
+        video.volume = restore / 100;
+      }
+    }
+  }, [isMuted, volumePercent, lastVolumeBeforeMute]);
+
+  // GSAP sostituito con Framer Motion per consistency e bundle size
+  // Disabilita animazioni durante SSR per evitare hydration mismatch
+  const shouldReduceMotion = !isClient || isReducedMotion();
 
   React.useEffect(() => {
     let isCancelled = false;
@@ -73,7 +100,9 @@ export const Hero: React.FC = () => {
     if (!isPlaying) return;
     const video = videoRef.current;
     if (!video) return;
-    const handleCanPlay = () => setIsVideoReady(true);
+    const handleCanPlay = () => {
+      // Video ready - nessuna azione necessaria
+    };
     video.addEventListener("canplay", handleCanPlay, { once: true });
     const tryPlay = async () => {
       try {
@@ -139,25 +168,7 @@ export const Hero: React.FC = () => {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [isPlaying, isMuted, isPaused]);
-
-  const handleToggleMute = () => {
-    const next = !isMuted;
-    setIsMuted(next);
-    const video = videoRef.current;
-    if (video) {
-      video.muted = next;
-      if (next) {
-        if (volumePercent > 0) setLastVolumeBeforeMute(volumePercent);
-        setVolumePercent(0);
-        video.volume = 0;
-      } else {
-        const restore = lastVolumeBeforeMute > 0 ? lastVolumeBeforeMute : 50;
-        setVolumePercent(restore);
-        video.volume = restore / 100;
-      }
-    }
-  };
+  }, [isPlaying, isMuted, isPaused, handleToggleMute]);
 
   const handleVolumeChange = (nextPercent: number) => {
     const clamped = Math.max(0, Math.min(100, nextPercent));
@@ -188,41 +199,100 @@ export const Hero: React.FC = () => {
   };
 
   return (
-    <div className="relative overflow-hidden text-white bg-[url('/images/hero-bg.webp')] bg-cover bg-center">
-      <div aria-hidden className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/40 via-black/40 to-black/60" />
-      <Container className="relative z-10 grid gap-8 py-16 md:grid-cols-2 md:items-center lg:py-24">
-        <div>
-          <p className="text-sm uppercase tracking-[0.2em] text-neutral-300">Lun - Dom: 08:00 - 22:00</p>
-          <h1 ref={titleRef} className="mt-3 text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl">
+    <div ref={heroRef} className="relative min-h-screen overflow-hidden text-white">
+      {/* Background con parallax */}
+      <motion.div 
+        style={{ y: backgroundY }}
+        className="absolute inset-0 scale-110 bg-[url('/images/hero-bg.webp')] bg-cover bg-center"
+      />
+      
+      {/* Gradient overlay moderno */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/30 via-black/50 to-black/70" />
+      
+      {/* Glassmorphism overlay per depth */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 bg-gradient-to-br from-blue-900/10 via-transparent to-purple-900/10" />
+      <Container className="relative z-10 flex min-h-screen items-center">
+        <motion.div 
+          style={{ y: textY }}
+          className="grid gap-8 md:grid-cols-2 md:items-center w-full"
+        >
+          <div>
+          <motion.p 
+            initial={shouldReduceMotion ? {} : { opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            className="text-sm uppercase tracking-[0.2em] text-neutral-300"
+          >
+            Lun - Dom: 08:00 - 22:00
+          </motion.p>
+          <motion.h1 
+            initial={shouldReduceMotion ? {} : { opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: "easeOut", delay: 0.1 }}
+            className="mt-3 text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl"
+          >
             Ukiyo Crew Detailing
-          </h1>
+          </motion.h1>
           <p className="mt-4 max-w-prose text-neutral-300">
             Interni, esterni, motore; protezione vernice, rimozione macchie e oscuramento vetri.
           </p>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <Button asChild size="lg">
-              <Link href="#contact">Prenota un appuntamento</Link>
-            </Button>
-            <Button asChild variant="secondary" className="hover:bg-secondary/70">
-              <Link href="#services">I nostri servizi</Link>
-            </Button>
-            <Button asChild variant="secondary">
-              <Link href="tel:+18002345764" aria-label="Chiama ora">Chiama ora</Link>
-            </Button>
-          </div>
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5, duration: 0.6 }}
+            className="mt-6 flex flex-wrap gap-3"
+          >
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              transition={{ type: "spring", stiffness: 400, damping: 17 }}
+            >
+              <Button asChild size="lg" className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-xl shadow-blue-500/25">
+                <Link href="#contact">Prenota un appuntamento</Link>
+              </Button>
+            </motion.div>
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              transition={{ type: "spring", stiffness: 400, damping: 17 }}
+            >
+              <Button asChild variant="secondary" className="backdrop-blur-sm bg-white/10 border border-white/20 hover:bg-white/20 shadow-xl">
+                <Link href="#services">I nostri servizi</Link>
+              </Button>
+            </motion.div>
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              transition={{ type: "spring", stiffness: 400, damping: 17 }}
+            >
+              <Button asChild variant="secondary" className="backdrop-blur-sm bg-white/10 border border-white/20 hover:bg-white/20 shadow-xl">
+                <Link href="tel:+18002345764" aria-label="Chiama ora">Chiama ora</Link>
+              </Button>
+            </motion.div>
+          </motion.div>
 
           <div className="mt-10" aria-label="Chi siamo">
             <h3 className="text-sm uppercase tracking-[0.2em] text-neutral-300">chi siamo</h3>
             <p className="mt-2 max-w-prose text-neutral-300 text-sm">Due professionisti del detailing, attenzione maniacale ai dettagli e passione per ogni veicolo. Qui sotto una foto di gruppo e i nostri ritratti.</p>
-            <div ref={kpiRef} className="mt-4 grid grid-cols-3 gap-4" data-team-grid>
+            <motion.div 
+              initial={shouldReduceMotion ? {} : { opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, ease: "easeOut", delay: 0.3 }}
+              className="mt-4 grid grid-cols-3 gap-4" 
+              data-team-grid
+            >
               {[
                 { src: "/images/team/team-01.webp", alt: "Foto membro team 1" },
                 { src: "/images/team/team-02.webp", alt: "Foto membro team 2" },
                 { src: "/images/team/team-03.webp", alt: "Foto di gruppo" },
               ].map((t, i) => (
-                <div
+                <motion.div
                   key={i}
-                  className="group relative aspect-square overflow-hidden rounded-lg border border-white/10 bg-white/5"
+                  initial={shouldReduceMotion ? {} : { opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: shouldReduceMotion ? 0 : 0.5 + i * 0.08, duration: 0.5 }}
+                  whileHover={shouldReduceMotion ? {} : { scale: 1.05, y: -5 }}
+                  className="group relative aspect-square overflow-hidden rounded-xl backdrop-blur-sm bg-white/10 border border-white/20 shadow-xl shadow-black/25"
                   data-team-item
                   aria-hidden
                 >
@@ -238,16 +308,21 @@ export const Hero: React.FC = () => {
                     aria-hidden
                   />
                   <span className="pointer-events-none absolute bottom-0 left-0 right-0 translate-y-1/2 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:opacity-100">
-                    <span className="mx-2 mb-2 inline-block rounded bg-black/60 px-2 py-1 text-[10px]">{["Daniel","Lorenzo","Ukiyo Team"][i]}</span>
+                    <span className="mx-2 mb-2 inline-block rounded-lg backdrop-blur-sm bg-black/60 border border-white/20 px-2 py-1 text-[10px] font-medium">{["Daniel","Lorenzo","Ukiyo Team"][i]}</span>
                   </span>
-                </div>
+                </motion.div>
               ))}
-            </div>
+            </motion.div>
           </div>
-        </div>
+          </div>
 
-        <div className="relative">
-          <div className="relative aspect-[16/9] w-full overflow-hidden rounded-xl border border-white/10 bg-white/5">
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3, duration: 0.6 }}
+            className="relative"
+          >
+            <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl backdrop-blur-sm bg-white/10 border border-white/20 shadow-2xl shadow-black/25">
             {/* Video inline sempre renderizzato; poster da primo frame (data URL). Nessuna immagine esterna. */}
             <video
               ref={videoRef}
@@ -265,7 +340,7 @@ export const Hero: React.FC = () => {
               <source src="/videos/hero.mp4" type="video/mp4" />
             </video>
 
-            {/* Overlay controlli minimal (appare solo quando il video è mostrato) */}
+            {/* Overlay controlli minimal con glassmorphism */}
             {isPlaying ? (
               <div className="pointer-events-none absolute inset-0 flex items-start justify-end p-3">
                 <div className="pointer-events-auto flex items-center gap-3 opacity-100 transition-opacity duration-300 hover:opacity-100 data-[hidden=true]:opacity-0" data-controls>
@@ -333,23 +408,29 @@ export const Hero: React.FC = () => {
               </svg>
             </button>
           ) : null}
-        </div>
+          </motion.div>
+        </motion.div>
       </Container>
 
-      
-
-      <div className="border-t border-white/10">
+      {/* Badge di fiducia con glassmorphism */}
+      <div className="border-t border-white/20 backdrop-blur-sm bg-white/5">
         <Container className="relative z-10 grid grid-cols-2 gap-4 py-8 sm:grid-cols-4" aria-label="Badge di fiducia">
           {[
             { title: "qualità", subtitle: "garantita" },
             { title: "natura", subtitle: "rispettata" },
             { title: "veloce", subtitle: "processo" },
             { title: "prezzi", subtitle: "accessibili" },
-          ].map((b) => (
-            <div key={b.title} className="text-center">
+          ].map((b, i) => (
+            <motion.div 
+              key={b.title} 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.0 + i * 0.1, duration: 0.5 }}
+              className="text-center"
+            >
               <div className="text-sm uppercase tracking-widest text-neutral-200">{b.title}</div>
-              <div className="text-lg font-semibold">{b.subtitle}</div>
-            </div>
+              <div className="text-lg font-semibold text-white">{b.subtitle}</div>
+            </motion.div>
           ))}
         </Container>
       </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { motion } from "framer-motion";
 import { Container } from "@/components/layout/Container";
 import { Section } from "@/components/layout/Section";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,9 +43,13 @@ const ImageWithSkeleton: React.FC<{
         src={src}
         alt={alt}
         fill
-        className={`object-cover transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
+        className={`object-cover transition-[opacity,transform] duration-300 ease-out ${loaded ? "opacity-100" : "opacity-0"} group-hover:scale-105 group-focus-within:scale-105`}
         sizes={sizes}
         onLoad={() => setLoaded(true)}
+      />
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-black/10 group-focus-within:bg-black/10"
       />
     </div>
   );
@@ -198,10 +203,17 @@ const ServiceCard: React.FC<{ item: ServiceItem; isSSR?: boolean }> = ({ item, i
   const imageSizes = isSSR ? "(min-width: 1024px) 380px, 100vw" : "(min-width: 1024px) 280px, (min-width: 640px) 50vw, 100vw";
 
   return (
-    <Card className="border-neutral-200 dark:border-white/10">
+    <motion.div
+      initial={isSSR ? {} : { opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-100px" }}
+      transition={{ duration: 0.5 }}
+      whileHover={isSSR ? {} : { y: -5 }}
+    >
+      <Card className="backdrop-blur-sm bg-white/5 border border-white/10 hover:border-white/30 hover:bg-white/10 transition-all duration-300 shadow-lg hover:shadow-xl group h-full">
       <CardHeader>
-        <CardTitle className="flex items-center gap-3 text-base">
-          <Image src={item.icon} alt={item.iconAlt} width={28} height={28} />
+        <CardTitle className="flex items-center gap-3 text-lg font-semibold">
+          <Image src={item.icon} alt={item.iconAlt} width={28} height={28} className="dark:invert dark:brightness-90 dark:opacity-90" />
           <span className="capitalize">{item.title}</span>
           {item.recommended ? (
             <span
@@ -214,10 +226,13 @@ const ServiceCard: React.FC<{ item: ServiceItem; isSSR?: boolean }> = ({ item, i
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <ImageWithSkeleton src={item.photo} alt={item.photoAlt} sizes={imageSizes} />
-        <p className="mt-3 text-sm text-muted-foreground">{item.summary}</p>
+        <div className="group">
+          <ImageWithSkeleton src={item.photo} alt={item.photoAlt} sizes={imageSizes} />
+        </div>
+        <p className="mt-4 text-sm text-muted-foreground leading-relaxed group-hover:text-white/90 transition-colors">{item.summary}</p>
       </CardContent>
     </Card>
+    </motion.div>
   );
 };
 
@@ -233,8 +248,13 @@ export const Services: React.FC = () => {
     return (
       <Section id="services" ariaLabel="Ukiyo Crew — servizi">
         <Container>
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">servizi</h2>
-          <div className="mt-8 grid gap-6 grid-cols-1 sm:grid-cols-4">
+          <div className="text-center">
+            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">I nostri servizi</h2>
+            <p className="mt-4 text-base text-muted-foreground sm:text-lg">
+              Interni, esterni, motore; protezione vernice, rimozione macchie e oscuramento vetri.
+            </p>
+          </div>
+          <div className="mt-10 grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {serviceItems.map((item) => (
               <ServiceCard key={item.id} item={item} isSSR={true} />
             ))}
@@ -247,8 +267,13 @@ export const Services: React.FC = () => {
   return (
     <Section id="services" ariaLabel="Ukiyo Crew — servizi">
       <Container>
-        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">servizi</h2>
-        <div className="mt-8 grid gap-6 grid-cols-1 sm:grid-cols-4">
+        <div className="text-center">
+          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">I nostri servizi</h2>
+          <p className="mt-4 text-base text-muted-foreground sm:text-lg">
+            Interni, esterni, motore; protezione vernice, rimozione macchie e oscuramento vetri.
+          </p>
+        </div>
+        <div className="mt-10 grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {serviceItems.map((item) => (
             <ServiceCard key={item.id} item={item} />
           ))}

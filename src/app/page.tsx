@@ -1,15 +1,51 @@
-import { Hero } from "@/components/Hero";
-import { Services } from "@/components/Services";
 import dynamic from "next/dynamic";
-const Gallery = dynamic(() => import("@/components/Gallery").then(m => m.Gallery));
-const Testimonials = dynamic(() => import("@/components/Testimonials").then(m => m.Testimonials));
-const VisionMission = dynamic(() => import("@/components/VisionMission").then(m => m.VisionMission));
-const Partners = dynamic(() => import("@/components/Partners").then(m => m.Partners));
+import { HeroSkeleton } from "@/components/skeletons/HeroSkeleton";
+import { ServicesSkeleton } from "@/components/skeletons/ServicesSkeleton";
+
+// Lazy load componenti pesanti con skeleton loaders
+const Hero = dynamic(() => import("@/components/Hero").then(m => m.Hero), {
+  loading: () => <HeroSkeleton />,
+  ssr: true
+});
+
+const Services = dynamic(() => import("@/components/Services").then(m => m.Services), {
+  loading: () => <ServicesSkeleton />,
+  ssr: true
+});
+
+const Gallery = dynamic(() => import("@/components/Gallery").then(m => m.Gallery), {
+  loading: () => (
+    <div className="min-h-[400px] animate-pulse bg-gradient-to-b from-transparent to-background/50" />
+  )
+});
+
+// Server components - importati direttamente per migliori performance
+import { Testimonials } from "@/components/Testimonials";
+import { VisionMission } from "@/components/VisionMission";
+import { Partners } from "@/components/Partners";
 import { Section } from "@/components/layout/Section";
 import { Container } from "@/components/layout/Container";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { BookingForm } from "@/components/BookingForm";
+
+// BookingForm rimane dynamic perché usa form hooks
+const BookingForm = dynamic(() => import("@/components/BookingForm").then(m => m.BookingForm), {
+  loading: () => (
+    <div className="animate-pulse">
+      <div className="h-8 bg-muted rounded mb-4" />
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="h-10 bg-muted rounded" />
+          <div className="h-10 bg-muted rounded" />
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="h-10 bg-muted rounded" />
+          <div className="h-10 bg-muted rounded" />
+        </div>
+        <div className="h-24 bg-muted rounded" />
+        <div className="h-10 bg-muted rounded" />
+      </div>
+    </div>
+  )
+});
 
 export default function Home() {
   return (
@@ -22,8 +58,13 @@ export default function Home() {
       <Partners />
       <Section id="contact" ariaLabel="Contatti e prenotazioni">
         <Container>
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">contattaci</h2>
-          <div className="mt-6 max-w-2xl">
+          <div className="text-center">
+            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Contattaci</h2>
+            <p className="mt-4 text-base text-muted-foreground sm:text-lg">
+              Prenota ora il tuo servizio di car detailing professionale
+            </p>
+          </div>
+          <div className="mt-10 max-w-2xl mx-auto">
             <BookingForm />
           </div>
         </Container>

@@ -50,14 +50,14 @@ export const bookingSchema = z.object({
     message: "Seleziona un tipo di veicolo valido"
   }),
 
-  // Servizio enum strict
+  // Servizio enum strict - solo servizi effettivamente disponibili
   service: z.enum([
-    "interior-detailing",
-    "exterior-detailing", 
-    "engine-detailing",
-    "stains-removal",
-    "paint-protection",
-    "windows-tinting",
+    "detailing-interno",
+    "lucidatura-carrozzeria",
+    "paint-correction", 
+    "sanificazione-ozono",
+    "ceramic-coating",
+    "ppf-wrapping",
   ], { 
     message: "Seleziona un servizio valido"
   }),
@@ -99,7 +99,7 @@ export type BookingInput = {
   email: string;
   phone: string;
   vehicle: "car" | "suv" | "truck" | "bike";
-  service: "interior-detailing" | "exterior-detailing" | "engine-detailing" | "stains-removal" | "paint-protection" | "windows-tinting";
+  service: "detailing-interno" | "lucidatura-carrozzeria" | "paint-correction" | "sanificazione-ozono" | "ceramic-coating" | "ppf-wrapping";
   date: string;
   time: string;
   notes?: string;

@@ -99,10 +99,10 @@ export const Services: React.FC = () => {
           <div className="text-center">
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">I nostri servizi</h2>
             <p className="mt-4 text-base text-muted-foreground sm:text-lg">
-              Interni, esterni, motore; protezione vernice, rimozione macchie e oscuramento vetri.
+              Interni, esterni, motore, ceramic coating, PPF e wrapping; protezione completa per ogni esigenza.
             </p>
           </div>
-          <div className="mt-10 grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-10 grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
             {SERVICES_DATA.map((item) => (
               <ServiceCard key={item.id} item={item} isSSR={true} />
             ))}
@@ -117,11 +117,11 @@ export const Services: React.FC = () => {
       <Container>
         <div className="text-center">
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">I nostri servizi</h2>
-          <p className="mt-4 text-base text-muted-foreground sm:text-lg">
-            Interni, esterni, motore; protezione vernice, rimozione macchie e oscuramento vetri.
-          </p>
+            <p className="mt-4 text-base text-muted-foreground sm:text-lg">
+              Interni, esterni, motore, ceramic coating, PPF e wrapping; protezione completa per ogni esigenza.
+            </p>
         </div>
-        <div className="mt-10 grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-10 grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
           {SERVICES_DATA.map((item) => (
             <ServiceCard key={item.id} item={item} />
           ))}

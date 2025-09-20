@@ -149,12 +149,12 @@ export const BookingForm: React.FC = () => {
             {...register("service")}
           >
             <option value="">Seleziona servizio</option>
-            <option value="interior-detailing">Detailing Interni</option>
-            <option value="exterior-detailing">Detailing Esterni</option>
-            <option value="engine-detailing">Pulizia Vano Motore</option>
-            <option value="stains-removal">Rimozione Macchie</option>
-            <option value="paint-protection">Protezione Vernice</option>
-            <option value="windows-tinting">Oscuramento Vetri</option>
+            <option value="detailing-interno">Detailing Interno</option>
+            <option value="lucidatura-carrozzeria">Lucidatura Carrozzeria</option>
+            <option value="paint-correction">Paint Correction</option>
+            <option value="sanificazione-ozono">Sanificazione Interni (Ozono)</option>
+            <option value="ceramic-coating">Ceramic Coating</option>
+            <option value="ppf-wrapping">PPF e Wrapping</option>
           </select>
           {errors.service && <p id="service-error" role="alert" aria-live="polite" className="text-xs text-red-500 mt-1">{errors.service.message}</p>}
         </div>

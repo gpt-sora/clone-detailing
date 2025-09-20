@@ -25,12 +25,12 @@ const isAllowedOrigin = (req: Request): boolean => {
 };
 
 const serviceLabelMap: Record<string, string> = {
-  "interior-detailing": "Interni",
-  "exterior-detailing": "Esterni",
-  "engine-detailing": "Vano motore",
-  "stains-removal": "Rimozione macchie",
-  "paint-protection": "Protezione vernice",
-  "windows-tinting": "Oscuramento vetri",
+  "detailing-interno": "Detailing Interno",
+  "lucidatura-carrozzeria": "Lucidatura Carrozzeria",
+  "paint-correction": "Paint Correction",
+  "sanificazione-ozono": "Sanificazione Interni (Ozono)",
+  "ceramic-coating": "Ceramic Coating",
+  "ppf-wrapping": "PPF e Wrapping",
 };
 
 const getServiceLabel = (key: string): string => serviceLabelMap[key] ?? key;

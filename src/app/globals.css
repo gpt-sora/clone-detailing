@@ -78,38 +78,9 @@
   --sidebar-ring: #9bb3e9;
 }
 
+/* Dark mode variables - identiche a :root per questo progetto */
 .dark {
-  --background: #0a0a0a;
-  --foreground: #ededed;
-  --card: #0a0a0a;
-  --card-foreground: #ededed;
-  --popover: #0a0a0a;
-  --popover-foreground: #ededed;
-  --primary: #e6db20;
-  --primary-foreground: #0a0a0a;
-  --secondary: #9bb3e9;
-  --secondary-foreground: #0a0a0a;
-  --muted: #121212;
-  --muted-foreground: #c8d4f2;
-  --accent: #10348c;
-  --accent-foreground: #ededed;
-  --destructive: #e5484d;
-  --border: #1a1a1a;
-  --input: #1a1a1a;
-  --ring: #9bb3e9;
-  --chart-1: #e6db20;
-  --chart-2: #9bb3e9;
-  --chart-3: #10348c;
-  --chart-4: #ededed;
-  --chart-5: #0a0a0a;
-  --sidebar: #0a0a0a;
-  --sidebar-foreground: #ededed;
-  --sidebar-primary: #e6db20;
-  --sidebar-primary-foreground: #0a0a0a;
-  --sidebar-accent: #10348c;
-  --sidebar-accent-foreground: #ededed;
-  --sidebar-border: #1a1a1a;
-  --sidebar-ring: #9bb3e9;
+  /* Eredita tutte le variabili da :root */
 }
 
 @layer base {

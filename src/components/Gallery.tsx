@@ -8,12 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Container } from "@/components/layout/Container";
 import { Section } from "@/components/layout/Section";
 import { cn } from "@/lib/utils";
-
-const galleryItems = Array.from({ length: 8 }, (_, i) => ({
-  id: i + 1,
-  src: `/images/gallery/gallery-0${i + 1}.jpg`,
-  alt: `Detailing auto ${i + 1} - Lavoro professionale`,
-}));
+import { GALLERY_DATA } from "@/data";
 
 export const Gallery: React.FC = () => {
   const [mounted, setMounted] = React.useState(false);
@@ -120,7 +115,7 @@ export const Gallery: React.FC = () => {
         <div className="relative mt-10">
           <div className="overflow-hidden rounded-lg" ref={emblaRef}>
             <div className="flex">
-              {galleryItems.map((item, index) => (
+              {GALLERY_DATA.map((item, index) => (
                 <div 
                   key={item.id} 
                   className="relative min-w-0 flex-[0_0_100%]"
@@ -191,7 +186,7 @@ export const Gallery: React.FC = () => {
         <div className="mt-6">
           <div className="overflow-hidden" ref={emblaThumbsRef}>
             <div className="flex gap-2">
-              {galleryItems.map((item, index) => (
+              {GALLERY_DATA.map((item, index) => (
                 <motion.button
                   key={item.id}
                   onClick={() => handleThumbClick(index)}
@@ -224,7 +219,7 @@ export const Gallery: React.FC = () => {
 
         {/* Indicatore pagina */}
         <div className="mt-4 text-center text-sm text-muted-foreground">
-          {selectedIndex + 1} / {galleryItems.length}
+          {selectedIndex + 1} / {GALLERY_DATA.length}
         </div>
       </Container>
     </Section>

@@ -2,33 +2,7 @@ import * as React from "react";
 import { Container } from "@/components/layout/Container";
 import { Section } from "@/components/layout/Section";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
-type Testimonial = {
-  name: string;
-  quote: string;
-  rating: number; // 0..5 with halves
-};
-
-const testimonials: Testimonial[] = [
-  {
-    name: "Leonard Mullingam",
-    quote:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis cursus, mi quis viverra lorem impsum dolor nulla est ornare.",
-    rating: 4.5,
-  },
-  {
-    name: "Alexandra Bryce",
-    quote:
-      "Suspendisse varius enim in eros elementum tristique. Duis cursus, mi quis viverra lorem impsum dolor nulla est ornare.",
-    rating: 5,
-  },
-  {
-    name: "Jonathan Preston",
-    quote:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis cursus, mi quis viverra lorem impsum dolor nulla est ornare.",
-    rating: 4,
-  },
-];
+import { TESTIMONIALS_DATA } from "@/data";
 
 const Star: React.FC<{ filled?: boolean; half?: boolean }> = ({ filled, half }) => {
   if (half) {
@@ -84,7 +58,7 @@ export const Testimonials: React.FC = () => {
       <Container>
         <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">testimonianze</h2>
         <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {testimonials.map((t) => (
+          {TESTIMONIALS_DATA.map((t) => (
             <Card key={t.name} className="h-full border-neutral-200 dark:border-white/10">
               <CardHeader>
                 <CardTitle className="text-lg font-semibold">{t.name}</CardTitle>

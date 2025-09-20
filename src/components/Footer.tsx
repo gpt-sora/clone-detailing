@@ -12,8 +12,8 @@ export const Footer: React.FC = () => {
         </div>
         <nav className="grid gap-2" aria-label="Navigazione footer">
           <Link href="#services" className="text-sm hover:underline underline-offset-4">Servizi</Link>
-          <Link href="#pricing" className="text-sm hover:underline underline-offset-4">Prezzi</Link>
           <Link href="#gallery" className="text-sm hover:underline underline-offset-4">Galleria</Link>
+          <Link href="#about" className="text-sm hover:underline underline-offset-4">Chi siamo</Link>
           <Link href="#contact" className="text-sm hover:underline underline-offset-4">Contatti</Link>
         </nav>
         <div className="grid gap-2 text-sm">

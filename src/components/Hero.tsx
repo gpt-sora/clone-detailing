@@ -5,12 +5,12 @@ import * as React from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { Container } from "@/components/layout/Container";
 import { Button } from "@/components/ui/button";
-import { isReducedMotion } from "@/lib/animations";
+import { useVideoPlayer, useAnimationReady } from "@/hooks";
 // dialog rimosso: riproduzione inline
 
 export const Hero: React.FC = () => {
   const heroRef = React.useRef<HTMLDivElement>(null);
-  const [isClient, setIsClient] = React.useState(false);
+  const videoRef = React.useRef<HTMLVideoElement>(null);
   
   // Parallax effect per il background
   const { scrollYProgress } = useScroll({
@@ -20,183 +20,16 @@ export const Hero: React.FC = () => {
   
   const backgroundY = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
   const textY = useTransform(scrollYProgress, [0, 1], ["0%", "50%"]);
-  const videoRef = React.useRef<HTMLVideoElement>(null);
-  const [isPlaying, setIsPlaying] = React.useState(false);
-  const [isPaused, setIsPaused] = React.useState(false);
-  const [isMuted, setIsMuted] = React.useState(true);
-  // const [isVideoReady, setIsVideoReady] = React.useState(false); // Rimosso: non utilizzato
-  const [videoFirstFrameSrc, setVideoFirstFrameSrc] = React.useState<string | null>(null);
-  const controlsHideTimerRef = React.useRef<number | null>(null);
-  const [volumePercent, setVolumePercent] = React.useState<number>(50);
-  const [lastVolumeBeforeMute, setLastVolumeBeforeMute] = React.useState<number>(50);
 
-  // Hydration fix: attiva animazioni solo lato client
-  React.useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  // Definisco handleToggleMute prima per evitare hoisting issues
-  const handleToggleMute = React.useCallback(() => {
-    const next = !isMuted;
-    setIsMuted(next);
-    const video = videoRef.current;
-    if (video) {
-      video.muted = next;
-      if (next) {
-        if (volumePercent > 0) setLastVolumeBeforeMute(volumePercent);
-        setVolumePercent(0);
-        video.volume = 0;
-      } else {
-        const restore = lastVolumeBeforeMute > 0 ? lastVolumeBeforeMute : 50;
-        setVolumePercent(restore);
-        video.volume = restore / 100;
-      }
-    }
-  }, [isMuted, volumePercent, lastVolumeBeforeMute]);
+  // Custom hooks per logica separata
+  const animationReady = useAnimationReady();
+  const videoPlayer = useVideoPlayer(videoRef);
 
   // GSAP sostituito con Framer Motion per consistency e bundle size
   // Disabilita animazioni durante SSR per evitare hydration mismatch
-  const shouldReduceMotion = !isClient || isReducedMotion();
+  const shouldReduceMotion = !animationReady;
 
-  React.useEffect(() => {
-    let isCancelled = false;
-    const generateFirstFrame = async () => {
-      try {
-        const video = document.createElement("video");
-        video.src = "/videos/hero.mp4";
-        video.preload = "auto";
-        video.muted = true;
-        video.playsInline = true;
-        await new Promise<void>((resolve) => {
-          const onLoaded = () => resolve();
-          video.addEventListener("loadeddata", onLoaded, { once: true });
-        });
-        // Seek a tiny bit to avoid possible black first frame
-        await new Promise<void>((resolve) => {
-          const onSeeked = () => resolve();
-          video.currentTime = 0.1;
-          video.addEventListener("seeked", onSeeked, { once: true });
-        });
-        if (isCancelled) return;
-        const canvas = document.createElement("canvas");
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return;
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const dataUrl = canvas.toDataURL("image/webp", 0.9);
-        setVideoFirstFrameSrc(dataUrl);
-      } catch {
-        // Silently ignore and keep fallback image
-      }
-    };
-    generateFirstFrame();
-    return () => {
-      isCancelled = true;
-    };
-  }, []);
-
-  React.useEffect(() => {
-    if (!isPlaying) return;
-    const video = videoRef.current;
-    if (!video) return;
-    const handleCanPlay = () => {
-      // Video ready - nessuna azione necessaria
-    };
-    video.addEventListener("canplay", handleCanPlay, { once: true });
-    const tryPlay = async () => {
-      try {
-        video.muted = isMuted;
-        video.volume = volumePercent / 100;
-        await video.play();
-        setIsPaused(false);
-      } catch {
-        try {
-          video.muted = true;
-          await video.play();
-          setIsMuted(true);
-          setIsPaused(false);
-        } catch {
-          // Se fallisce ancora, manteniamo l'immagine
-        }
-      }
-    };
-    void tryPlay();
-    return () => {
-      video.removeEventListener("canplay", handleCanPlay);
-    };
-  }, [isPlaying, isMuted, volumePercent]);
-
-  React.useEffect(() => {
-    if (!isPlaying) return;
-    const container = document.querySelector('[data-controls]') as HTMLElement | null;
-    if (!container) return;
-    const root = container.parentElement as HTMLElement | null;
-    if (!root) return;
-    const showControls = () => container.setAttribute('data-hidden', 'false');
-    const hideControls = () => container.setAttribute('data-hidden', 'true');
-    const scheduleHide = () => {
-      if (controlsHideTimerRef.current) window.clearTimeout(controlsHideTimerRef.current);
-      controlsHideTimerRef.current = window.setTimeout(() => hideControls(), 2000);
-    };
-    const onMove = () => {
-      showControls();
-      scheduleHide();
-    };
-    root.addEventListener('mousemove', onMove);
-    root.addEventListener('touchstart', onMove);
-    showControls();
-    scheduleHide();
-    return () => {
-      root.removeEventListener('mousemove', onMove);
-      root.removeEventListener('touchstart', onMove);
-      if (controlsHideTimerRef.current) window.clearTimeout(controlsHideTimerRef.current);
-    };
-  }, [isPlaying]);
-
-  React.useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (!isPlaying) return;
-      if (e.key.toLowerCase() === 'm') {
-        e.preventDefault();
-        handleToggleMute();
-      }
-      if (e.key.toLowerCase() === 'k' || e.key === ' ') {
-        e.preventDefault();
-        void handleTogglePlay();
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [isPlaying, isMuted, isPaused, handleToggleMute]);
-
-  const handleVolumeChange = (nextPercent: number) => {
-    const clamped = Math.max(0, Math.min(100, nextPercent));
-    setVolumePercent(clamped);
-    const video = videoRef.current;
-    if (video) {
-      video.volume = clamped / 100;
-      const shouldMute = clamped === 0;
-      setIsMuted(shouldMute);
-      video.muted = shouldMute;
-    }
-  };
-
-  const handleTogglePlay = async () => {
-    const video = videoRef.current;
-    if (!video) return;
-    if (video.paused) {
-      try {
-        await video.play();
-        setIsPaused(false);
-      } catch {
-        // ignore
-      }
-    } else {
-      video.pause();
-      setIsPaused(true);
-    }
-  };
+  // Tutta la logica video è ora gestita dal custom hook useVideoPlayer
 
   return (
     <div ref={heroRef} className="relative min-h-screen overflow-hidden text-white">
@@ -294,7 +127,7 @@ export const Hero: React.FC = () => {
                   whileHover={shouldReduceMotion ? {} : { scale: 1.05, y: -5 }}
                   className="group relative aspect-square overflow-hidden rounded-xl backdrop-blur-sm bg-white/10 border border-white/20 shadow-xl shadow-black/25"
                   data-team-item
-                  aria-hidden
+                  aria-hidden="true"
                 >
                   <Image
                     src={t.src}
@@ -332,8 +165,8 @@ export const Hero: React.FC = () => {
               controls={false}
               disablePictureInPicture
               controlsList="nodownload noplaybackrate noremoteplayback"
-              muted={isMuted}
-              poster={videoFirstFrameSrc || undefined}
+              muted={videoPlayer.isMuted}
+              poster={videoPlayer.videoFirstFrameSrc || undefined}
               aria-label="Hero video"
             >
               <source src="/videos/hero.webm" type="video/webm" />
@@ -341,16 +174,16 @@ export const Hero: React.FC = () => {
             </video>
 
             {/* Overlay controlli minimal con glassmorphism */}
-            {isPlaying ? (
+            {videoPlayer.isPlaying ? (
               <div className="pointer-events-none absolute inset-0 flex items-start justify-end p-3">
                 <div className="pointer-events-auto flex items-center gap-3 opacity-100 transition-opacity duration-300 hover:opacity-100 data-[hidden=true]:opacity-0" data-controls>
                   <button
                     className="rounded-full border border-white/30 bg-white/10 p-2 text-white transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/60 focus:ring-offset-2 focus:ring-offset-transparent"
-                    aria-label={isMuted ? "Attiva audio" : "Disattiva audio"}
-                    title={isMuted ? "Attiva audio" : "Disattiva audio"}
-                    onClick={handleToggleMute}
+                    aria-label={videoPlayer.isMuted ? "Attiva audio" : "Disattiva audio"}
+                    title={videoPlayer.isMuted ? "Attiva audio" : "Disattiva audio"}
+                    onClick={videoPlayer.handleToggleMute}
                   >
-                    {isMuted ? (
+                    {videoPlayer.isMuted ? (
                       // Speaker X (outline)
                       <svg key="muted" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                         <path d="M11 5 6 9H3v6h3l5 4V5z" />
@@ -372,18 +205,18 @@ export const Hero: React.FC = () => {
                     type="range"
                     min={0}
                     max={100}
-                    value={volumePercent}
-                    onChange={(e) => handleVolumeChange(Number(e.target.value))}
+                    value={videoPlayer.volumePercent}
+                    onChange={(e) => videoPlayer.handleVolumeChange(Number(e.target.value))}
                     aria-label="Volume"
                     className="h-1.5 w-28 cursor-pointer appearance-none rounded-full bg-white/20 accent-white/90 focus:outline-none focus:ring-2 focus:ring-white/60 focus:ring-offset-2 focus:ring-offset-transparent"
                   />
                   <button
                     className="rounded-full border border-white/30 bg-white/10 p-2 text-white transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/60 focus:ring-offset-2 focus:ring-offset-transparent"
-                    aria-label={isPaused ? "Riprendi" : "Pausa"}
-                    title={isPaused ? "Riprendi" : "Pausa"}
-                    onClick={handleTogglePlay}
+                    aria-label={videoPlayer.isPaused ? "Riprendi" : "Pausa"}
+                    title={videoPlayer.isPaused ? "Riprendi" : "Pausa"}
+                    onClick={videoPlayer.handleTogglePlay}
                   >
-                    {isPaused ? (
+                    {videoPlayer.isPaused ? (
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
                         <path d="M8 5v14l11-7z" />
                       </svg>
@@ -397,11 +230,11 @@ export const Hero: React.FC = () => {
               </div>
             ) : null}
           </div>
-          {!isPlaying ? (
+          {!videoPlayer.isPlaying ? (
             <button
               className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/20 bg-white/10 p-4 backdrop-blur transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/60 focus:ring-offset-2 focus:ring-offset-transparent"
               aria-label="Riproduci video"
-              onClick={() => setIsPlaying(true)}
+              onClick={() => videoPlayer.setIsPlaying(true)}
             >
               <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
                 <path d="M8 5v14l11-7z" />
